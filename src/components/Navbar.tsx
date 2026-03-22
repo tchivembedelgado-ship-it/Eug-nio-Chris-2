@@ -126,8 +126,19 @@ export default function Navbar() {
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="fixed inset-0 top-16 z-40 bg-black/95 backdrop-blur-xl md:hidden">
-          <div className="flex flex-col gap-3 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-64px)]">
+        <div className="fixed inset-0 z-50 bg-black md:hidden">
+          <div className="flex h-16 items-center justify-between px-4 border-b border-white/10">
+            <Link to="/" onClick={closeMenu} className="text-2xl font-bold tracking-tighter text-emerald-500">
+              RIFA<span className="text-white">ANGOLA</span>
+            </Link>
+            <button
+              onClick={closeMenu}
+              className="rounded-full p-2 text-zinc-400 hover:bg-white/5"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          <div className="flex flex-col gap-3 p-4 sm:p-6 overflow-y-auto h-[calc(100vh-64px)]">
             <Link
               to="/"
               onClick={closeMenu}
