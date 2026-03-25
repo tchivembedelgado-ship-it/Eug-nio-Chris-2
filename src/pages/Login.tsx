@@ -21,13 +21,31 @@ export default function Login() {
 
     try {
       const fullPhone = `+244${phone.replace(/\D/g, '')}`;
-      const loginParams = loginType === 'email' 
-        ? { email, password } 
-        : { phone: fullPhone, password };
+      const virtualEmail = `${fullPhone.replace('+', '')}@telefone.local`;
+      
+      let loginError = null;
 
-      const { error } = await supabase.auth.signInWithPassword(loginParams);
+      if (loginType === 'email') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        loginError = error;
+      } else {
+        // Tenta primeiro com o email virtual (novo padrão)
+        const { error: virtualError } = await supabase.auth.signInWithPassword({ 
+          email: virtualEmail, 
+          password 
+        });
+        
+        if (virtualError) {
+          // Se falhar, tenta com o telefone real (padrão antigo do Supabase)
+          const { error: phoneError } = await supabase.auth.signInWithPassword({ 
+            phone: fullPhone, 
+            password 
+          });
+          loginError = phoneError;
+        }
+      }
 
-      if (error) throw error;
+      if (loginError) throw loginError;
       
       navigate('/dashboard');
     } catch (err: any) {
@@ -48,6 +66,11 @@ export default function Login() {
         className="w-full max-w-md rounded-[2.5rem] border border-white/10 bg-zinc-900 p-10 shadow-2xl"
       >
         <div className="mb-10 text-center">
+          <div className="mb-4 flex justify-center">
+            <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[10px] font-black text-red-500">
+              +18 APENAS PARA MAIORES
+            </span>
+          </div>
           <h1 className="mb-2 text-4xl font-black tracking-tighter">Bem-vindo</h1>
           <p className="text-zinc-500">Entre na sua conta para continuar.</p>
         </div>
@@ -57,7 +80,7 @@ export default function Login() {
           <button
             onClick={() => setLoginType('email')}
             className={`flex-1 rounded-xl py-2 text-xs font-bold uppercase tracking-widest transition-all ${
-              loginType === 'email' ? 'bg-emerald-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'
+              loginType === 'email' ? 'bg-primary text-black shadow-lg' : 'text-zinc-500 hover:text-white'
             }`}
           >
             Email
@@ -65,7 +88,7 @@ export default function Login() {
           <button
             onClick={() => setLoginType('phone')}
             className={`flex-1 rounded-xl py-2 text-xs font-bold uppercase tracking-widest transition-all ${
-              loginType === 'phone' ? 'bg-emerald-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'
+              loginType === 'phone' ? 'bg-primary text-black shadow-lg' : 'text-zinc-500 hover:text-white'
             }`}
           >
             Telefone
@@ -94,7 +117,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-emerald-500"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-primary"
                   placeholder="exemplo@email.com"
                 />
               </div>
@@ -112,7 +135,7 @@ export default function Login() {
                   type="tel"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-24 text-white outline-none focus:border-emerald-500"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-24 text-white outline-none focus:border-primary"
                   placeholder="9XX XXX XXX"
                   maxLength={9}
                 />
@@ -129,7 +152,7 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-emerald-500"
+                className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-primary"
                 placeholder="••••••••"
               />
             </div>
@@ -138,7 +161,7 @@ export default function Login() {
           <button
             disabled={loading}
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 py-4 text-lg font-black transition-all hover:bg-emerald-500 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary py-4 text-lg font-black text-black transition-all hover:bg-primary/90 disabled:opacity-50"
           >
             {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
               <>
@@ -151,7 +174,7 @@ export default function Login() {
 
         <p className="mt-8 text-center text-sm text-zinc-500">
           Ainda não tem conta?{' '}
-          <Link to="/register" className="font-bold text-emerald-500 hover:underline">
+          <Link to="/register" className="font-bold text-primary hover:underline">
             Registar
           </Link>
         </p>

@@ -12,20 +12,38 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { user, profile } = useAuth();
   const [purchases, setPurchases] = useState<(Purchase & { rifas: { title: string } })[]>([]);
+  const [hasPrizes, setHasPrizes] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const isProfileComplete = 
+    profile?.full_name && 
+    profile?.phone && 
+    profile?.address && 
+    profile?.nif && 
+    profile?.bank_details && 
+    profile?.bi_photo_url;
 
   useEffect(() => {
     if (!user) return;
-    async function fetchPurchases() {
-      const { data } = await supabase
+    async function fetchData() {
+      // Fetch purchases
+      const { data: purchaseData } = await supabase
         .from('purchases')
         .select('*, rifas(title)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      setPurchases(data as any || []);
+      setPurchases(purchaseData as any || []);
+
+      // Check for prizes
+      const { count } = await supabase
+        .from('winner_claims')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      setHasPrizes((count || 0) > 0);
       setLoading(false);
     }
-    fetchPurchases();
+    fetchData();
   }, [user]);
 
   return (
@@ -35,6 +53,34 @@ export default function Dashboard() {
         <h1 className="text-4xl font-black tracking-tighter">{t('nav.dashboard')}</h1>
         <p className="text-zinc-500">Bem-vindo de volta, {user?.email}</p>
       </div>
+
+      {/* Profile Completion Warning for Winners */}
+      {!isProfileComplete && hasPrizes && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 rounded-3xl border border-amber-500/20 bg-amber-500/10 p-6 backdrop-blur-sm"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-500">
+              <Trophy className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white">Parabéns! Ganhou um prémio!</h3>
+              <p className="mt-1 text-sm text-zinc-400">
+                Para podermos processar o envio do seu prémio material, é obrigatório completar o seu perfil com todos os dados e a foto do BI.
+              </p>
+              <Link
+                to="/perfil"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-black transition-all hover:bg-amber-400"
+              >
+                Completar Perfil Agora
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Stats */}

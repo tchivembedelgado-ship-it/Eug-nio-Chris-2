@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency } from '../../lib/utils';
-import { CheckCircle2, Clock, Phone, MapPin, User, Package, Loader2, Crown } from 'lucide-react';
+import { CheckCircle2, Clock, Phone, MapPin, User, Package, Loader2, Crown, Trash2 } from 'lucide-react';
 import BackButton from '../../components/BackButton';
 
 interface Claim {
@@ -26,6 +26,9 @@ export default function AdminClaims() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [processConfirm, setProcessConfirm] = useState<string | null>(null);
+  const [completeConfirm, setCompleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClaims();
@@ -52,6 +55,22 @@ export default function AdminClaims() {
   }
 
   async function updateStatus(id: string, newStatus: string) {
+    if (newStatus === 'processing' && processConfirm !== id) {
+      setProcessConfirm(id);
+      setCompleteConfirm(null);
+      setDeleteConfirm(null);
+      setTimeout(() => setProcessConfirm(null), 3000);
+      return;
+    }
+
+    if (newStatus === 'completed' && completeConfirm !== id) {
+      setCompleteConfirm(id);
+      setProcessConfirm(null);
+      setDeleteConfirm(null);
+      setTimeout(() => setCompleteConfirm(null), 3000);
+      return;
+    }
+
     setUpdating(id);
     try {
       const { error } = await supabase
@@ -65,6 +84,32 @@ export default function AdminClaims() {
       alert('Erro ao atualizar status: ' + error.message);
     } finally {
       setUpdating(null);
+      setProcessConfirm(null);
+      setCompleteConfirm(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+      return;
+    }
+
+    setUpdating(id);
+    try {
+      const { error } = await supabase
+        .from('winner_claims')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setClaims(prev => prev.filter(c => c.id !== id));
+    } catch (error: any) {
+      alert('Erro ao eliminar registo: ' + error.message);
+    } finally {
+      setUpdating(null);
+      setDeleteConfirm(null);
     }
   }
 
@@ -141,20 +186,32 @@ export default function AdminClaims() {
                     <div className="space-y-3">
                       {claim.status === 'pending' && (
                         <button
+                          type="button"
                           onClick={() => updateStatus(claim.id, 'processing')}
                           disabled={updating === claim.id}
-                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-all hover:bg-blue-500 disabled:opacity-50"
+                          className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all disabled:opacity-50 ${
+                            processConfirm === claim.id 
+                              ? 'bg-blue-500 animate-pulse' 
+                              : 'bg-blue-600 hover:bg-blue-500'
+                          }`}
                         >
-                          {updating === claim.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Processar'}
+                          {updating === claim.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
+                          {processConfirm === claim.id ? 'Confirmar?' : 'Processar'}
                         </button>
                       )}
                       {claim.status !== 'completed' && (
                         <button
+                          type="button"
                           onClick={() => updateStatus(claim.id, 'completed')}
                           disabled={updating === claim.id}
-                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
+                          className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all disabled:opacity-50 ${
+                            completeConfirm === claim.id 
+                              ? 'bg-emerald-500 animate-pulse' 
+                              : 'bg-emerald-600 hover:bg-emerald-500'
+                          }`}
                         >
-                          {updating === claim.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Marcar Entregue'}
+                          {updating === claim.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                          {completeConfirm === claim.id ? 'Confirmar?' : 'Marcar Entregue'}
                         </button>
                       )}
                       <a
@@ -166,6 +223,28 @@ export default function AdminClaims() {
                         <Phone className="h-4 w-4" />
                         WhatsApp
                       </a>
+                      {claim.status === 'completed' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(claim.id);
+                          }}
+                          disabled={updating === claim.id}
+                          className={`flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold transition-all disabled:opacity-50 ${
+                            deleteConfirm === claim.id
+                              ? 'bg-red-600 text-white border-red-600 animate-pulse'
+                              : 'border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                          }`}
+                        >
+                          {updating === claim.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          {deleteConfirm === claim.id ? 'Confirmar Eliminação?' : 'Eliminar Histórico'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

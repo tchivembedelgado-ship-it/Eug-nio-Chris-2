@@ -27,20 +27,30 @@ export default function Register() {
 
     try {
       const fullPhone = `+244${phone.replace(/\D/g, '')}`;
+      const virtualEmail = `${fullPhone.replace('+', '')}@telefone.local`;
+      
       const signUpParams = registerType === 'email' 
         ? { email, password } 
-        : { phone: fullPhone, password };
+        : { 
+            email: virtualEmail, 
+            password,
+            options: {
+              data: {
+                phone_number: fullPhone
+              }
+            }
+          };
 
       const { data, error } = await supabase.auth.signUp(signUpParams);
 
       if (error) throw error;
 
-      // Create profile (usually handled by trigger, but manually for safety)
+      // Create/Update profile manually for safety
       if (data.user) {
-        await supabase.from('profiles').insert({
+        await supabase.from('profiles').upsert({
           id: data.user.id,
-          email: data.user.email || '',
-          phone: data.user.phone || null,
+          email: registerType === 'email' ? data.user.email || '' : '',
+          phone: registerType === 'phone' ? fullPhone : (data.user.phone || null),
           balance: 0,
           is_admin: false
         });
@@ -65,6 +75,11 @@ export default function Register() {
         className="w-full max-w-md rounded-[2.5rem] border border-white/10 bg-zinc-900 p-10 shadow-2xl"
       >
         <div className="mb-10 text-center">
+          <div className="mb-4 flex justify-center">
+            <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[10px] font-black text-red-500">
+              +18 APENAS PARA MAIORES
+            </span>
+          </div>
           <h1 className="mb-2 text-4xl font-black tracking-tighter">Criar Conta</h1>
           <p className="text-zinc-500">Junte-se à maior comunidade de rifas.</p>
         </div>
@@ -74,7 +89,7 @@ export default function Register() {
           <button
             onClick={() => setRegisterType('email')}
             className={`flex-1 rounded-xl py-2 text-xs font-bold uppercase tracking-widest transition-all ${
-              registerType === 'email' ? 'bg-emerald-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'
+              registerType === 'email' ? 'bg-primary text-black shadow-lg' : 'text-zinc-500 hover:text-white'
             }`}
           >
             Email
@@ -82,7 +97,7 @@ export default function Register() {
           <button
             onClick={() => setRegisterType('phone')}
             className={`flex-1 rounded-xl py-2 text-xs font-bold uppercase tracking-widest transition-all ${
-              registerType === 'phone' ? 'bg-emerald-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'
+              registerType === 'phone' ? 'bg-primary text-black shadow-lg' : 'text-zinc-500 hover:text-white'
             }`}
           >
             Telefone
@@ -111,7 +126,7 @@ export default function Register() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-emerald-500"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-primary"
                   placeholder="exemplo@email.com"
                 />
               </div>
@@ -129,7 +144,7 @@ export default function Register() {
                   type="tel"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-24 text-white outline-none focus:border-emerald-500"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-24 text-white outline-none focus:border-primary"
                   placeholder="9XX XXX XXX"
                   maxLength={9}
                 />
@@ -146,7 +161,7 @@ export default function Register() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-emerald-500"
+                className="w-full rounded-xl border border-white/10 bg-black/50 p-4 pl-12 text-white outline-none focus:border-primary"
                 placeholder="••••••••"
               />
             </div>
@@ -155,7 +170,7 @@ export default function Register() {
           <button
             disabled={loading}
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 py-4 text-lg font-black transition-all hover:bg-emerald-500 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-primary py-4 text-lg font-black text-black transition-all hover:bg-primary/90 disabled:opacity-50"
           >
             {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
               <>
@@ -168,7 +183,7 @@ export default function Register() {
 
         <p className="mt-8 text-center text-sm text-zinc-500">
           Já tem uma conta?{' '}
-          <Link to="/login" className="font-bold text-emerald-500 hover:underline">
+          <Link to="/login" className="font-bold text-primary hover:underline">
             Entrar
           </Link>
         </p>

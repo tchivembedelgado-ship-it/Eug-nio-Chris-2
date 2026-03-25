@@ -11,7 +11,11 @@ import {
   Smartphone, 
   AlertCircle,
   Loader2,
-  Search
+  Search,
+  Phone,
+  MapPin,
+  ArrowRight,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import BackButton from '@/src/components/BackButton';
@@ -22,6 +26,9 @@ export default function AdminWithdrawals() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [approveConfirm, setApproveConfirm] = useState<string | null>(null);
+  const [rejectConfirm, setRejectConfirm] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +47,7 @@ export default function AdminWithdrawals() {
         .order('created_at', { ascending: false });
 
       if (fetchError) {
-        console.error('Erro detalhado:', fetchError);
+        console.error('Erro detalhado Supabase:', fetchError);
         // Se falhar o join, tenta buscar apenas os levantamentos
         const { data: simpleData, error: simpleError } = await supabase
           .from('withdrawals')
@@ -49,7 +56,7 @@ export default function AdminWithdrawals() {
           
         if (simpleError) throw simpleError;
         setWithdrawals(simpleData as any || []);
-        setError("Nota: Não foi possível carregar os dados dos utilizadores, apenas os valores.");
+        setError(`Nota: Não foi possível carregar os dados dos utilizadores (${fetchError.message}). Apenas os valores estão visíveis.`);
       } else {
         setWithdrawals(data as any || []);
       }
@@ -62,7 +69,11 @@ export default function AdminWithdrawals() {
   }
 
   async function handleApprove(id: string) {
-    if (!confirm('Confirmar que já realizou a transferência externa e deseja aprovar este levantamento? O saldo será debitado da conta do utilizador.')) return;
+    if (approveConfirm !== id) {
+      setApproveConfirm(id);
+      setTimeout(() => setApproveConfirm(null), 3000);
+      return;
+    }
     
     setProcessingId(id);
     try {
@@ -80,11 +91,16 @@ export default function AdminWithdrawals() {
       alert('Erro ao aprovar levantamento: ' + error.message);
     } finally {
       setProcessingId(null);
+      setApproveConfirm(null);
     }
   }
 
   async function handleReject(id: string) {
-    if (!confirm('Tem certeza que deseja rejeitar este levantamento?')) return;
+    if (rejectConfirm !== id) {
+      setRejectConfirm(id);
+      setTimeout(() => setRejectConfirm(null), 3000);
+      return;
+    }
     
     setProcessingId(id);
     try {
@@ -99,6 +115,31 @@ export default function AdminWithdrawals() {
       alert('Erro ao rejeitar levantamento: ' + error.message);
     } finally {
       setProcessingId(null);
+      setRejectConfirm(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+      return;
+    }
+
+    setProcessingId(id);
+    try {
+      const { error } = await supabase
+        .from('withdrawals')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setWithdrawals(prev => prev.filter(w => w.id !== id));
+    } catch (error: any) {
+      alert('Erro ao eliminar registo: ' + error.message);
+    } finally {
+      setProcessingId(null);
+      setDeleteConfirm(null);
     }
   }
 
@@ -106,7 +147,8 @@ export default function AdminWithdrawals() {
     const emailMatch = w.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
     const detailsMatch = w.details?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
     const nameMatch = w.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-    return emailMatch || detailsMatch || nameMatch;
+    const phoneMatch = w.profiles?.phone?.includes(searchTerm) || false;
+    return emailMatch || detailsMatch || nameMatch || phoneMatch;
   });
 
   return (
@@ -124,7 +166,7 @@ export default function AdminWithdrawals() {
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
-              placeholder="Pesquisar por email, nome ou detalhes..."
+              placeholder="Pesquisar por email, nome, telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-2xl border border-white/10 bg-zinc-900/50 py-3 pl-12 pr-4 outline-none focus:border-emerald-500 transition-all"
@@ -176,33 +218,87 @@ export default function AdminWithdrawals() {
                         <div className="text-2xl font-black text-white">{formatCurrency(w.amount)}</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-zinc-500">{new Date(w.created_at).toLocaleDateString()}</div>
-                      <div className="text-xs text-zinc-500">{new Date(w.created_at).toLocaleTimeString()}</div>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-right">
+                        <div className="text-xs text-zinc-500">{new Date(w.created_at).toLocaleDateString()}</div>
+                        <div className="text-xs text-zinc-500">{new Date(w.created_at).toLocaleTimeString()}</div>
+                      </div>
+                      {w.status !== 'pending' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(w.id);
+                          }}
+                          disabled={processingId === w.id}
+                          className={`relative z-10 rounded-xl p-2 transition-all disabled:opacity-50 ${
+                            deleteConfirm === w.id 
+                              ? 'bg-red-600 text-white animate-pulse' 
+                              : 'bg-zinc-800 text-zinc-500 hover:bg-red-500/20 hover:text-red-500'
+                          }`}
+                          title={deleteConfirm === w.id ? "Clique novamente para confirmar" : "Eliminar do Histórico"}
+                        >
+                          {processingId === w.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  <div className="mt-8 space-y-4 rounded-2xl bg-black/40 p-6">
-                    <div className="flex items-center gap-3">
-                      <User className="h-4 w-4 text-zinc-500" />
-                      <div>
-                        <div className="text-xs font-bold text-zinc-500 uppercase">Utilizador</div>
-                        <div className="text-sm font-bold text-white">{w.profiles?.full_name || 'N/A'}</div>
-                        <div className="text-xs text-zinc-500">{w.profiles?.email || 'Email não disponível'}</div>
+                  <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-4 rounded-2xl bg-black/40 p-6">
+                      <div className="flex items-center gap-3">
+                        <User className="h-4 w-4 text-zinc-500" />
+                        <div>
+                          <div className="text-xs font-bold text-zinc-500 uppercase">Utilizador</div>
+                          <div className="text-sm font-bold text-white">{w.profiles?.full_name || 'N/A'}</div>
+                          <div className="text-xs text-zinc-500">{w.profiles?.email || 'Email não disponível'}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-4 w-4 text-zinc-500" />
+                        <div>
+                          <div className="text-xs font-bold text-zinc-500 uppercase">Telefone</div>
+                          <div className="text-sm font-bold text-white">{w.profiles?.phone || 'Não informado'}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-4 w-4 text-zinc-500" />
+                        <div>
+                          <div className="text-xs font-bold text-zinc-500 uppercase">Localização</div>
+                          <div className="text-sm font-bold text-white truncate max-w-[150px]" title={w.profiles?.address}>
+                            {w.profiles?.address || 'Não informado'}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Wallet className="h-4 w-4 text-zinc-500" />
-                      <div>
-                        <div className="text-xs font-bold text-zinc-500 uppercase">Saldo Atual</div>
-                        <div className="text-sm font-bold text-emerald-500">{formatCurrency(w.profiles?.balance || 0)}</div>
+
+                    <div className="space-y-4 rounded-2xl bg-black/40 p-6">
+                      <div className="flex items-center gap-3">
+                        <Wallet className="h-4 w-4 text-zinc-500" />
+                        <div>
+                          <div className="text-xs font-bold text-zinc-500 uppercase">Saldo Atual</div>
+                          <div className="text-sm font-bold text-emerald-500">{formatCurrency(w.profiles?.balance || 0)}</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Landmark className="h-4 w-4 text-zinc-500" />
-                      <div>
-                        <div className="text-xs font-bold text-zinc-500 uppercase">Dados para Transferência</div>
-                        <div className="text-sm font-black text-white break-all">{w.details}</div>
+
+                      <div className="flex items-center gap-3">
+                        <ArrowRight className="h-4 w-4 text-zinc-500" />
+                        <div>
+                          <div className="text-xs font-bold text-zinc-500 uppercase">Saldo Após Levantamento</div>
+                          <div className="text-sm font-bold text-amber-500">
+                            {formatCurrency((w.profiles?.balance || 0) - w.amount)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Landmark className="h-4 w-4 text-zinc-500" />
+                        <div>
+                          <div className="text-xs font-bold text-zinc-500 uppercase">Dados para Transferência</div>
+                          <div className="text-sm font-black text-white break-all">{w.details}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -212,18 +308,26 @@ export default function AdminWithdrawals() {
                       <button
                         disabled={processingId === w.id}
                         onClick={() => handleApprove(w.id)}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 font-bold text-white transition-all disabled:opacity-50 ${
+                          approveConfirm === w.id 
+                            ? 'bg-emerald-500 animate-pulse' 
+                            : 'bg-emerald-600 hover:bg-emerald-500'
+                        }`}
                       >
                         {processingId === w.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                        Aprovar
+                        {approveConfirm === w.id ? 'Confirmar?' : 'Aprovar'}
                       </button>
                       <button
                         disabled={processingId === w.id}
                         onClick={() => handleReject(w.id)}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 py-3 font-bold text-red-500 transition-all hover:bg-red-500/20 disabled:opacity-50"
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 font-bold transition-all disabled:opacity-50 ${
+                          rejectConfirm === w.id 
+                            ? 'bg-red-600 text-white border-red-600 animate-pulse' 
+                            : 'border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                        }`}
                       >
                         {processingId === w.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                        Rejeitar
+                        {rejectConfirm === w.id ? 'Confirmar?' : 'Rejeitar'}
                       </button>
                     </div>
                   )}

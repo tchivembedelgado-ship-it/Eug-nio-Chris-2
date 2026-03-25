@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/src/context/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -21,14 +21,14 @@ export default function ProfileGuard({ children }: ProfileGuardProps) {
   }
 
   const isProfileComplete = 
-    profile?.full_name && 
-    profile?.phone && 
-    profile?.address && 
-    profile?.nif && 
-    profile?.bank_details && 
-    profile?.bi_photo_url;
+    profile?.full_name?.trim() && 
+    profile?.phone?.trim() && 
+    profile?.address?.trim() && 
+    profile?.nif?.trim() && 
+    profile?.bank_details?.trim() && 
+    profile?.bi_photo_url?.trim();
 
-  if (!isProfileComplete) {
+  if (!profile || !isProfileComplete) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4 text-center">
         <motion.div
@@ -47,15 +47,12 @@ export default function ProfileGuard({ children }: ProfileGuardProps) {
             Para garantir a segurança das transações e o envio de prémios, é obrigatório completar o seu perfil com todos os dados e a foto do BI.
           </p>
           
-          <Navigate to="/perfil" state={{ from: location }} replace={false} />
-          
-          {/* Fallback link if Navigate doesn't trigger immediately */}
-          <a 
-            href="/perfil"
-            className="inline-block w-full rounded-2xl bg-emerald-600 py-4 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-emerald-500"
+          <Link 
+            to="/perfil"
+            className="inline-block w-full rounded-2xl bg-emerald-600 py-4 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-emerald-500 text-center"
           >
             Completar Perfil Agora
-          </a>
+          </Link>
         </motion.div>
       </div>
     );

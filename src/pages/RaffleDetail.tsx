@@ -69,19 +69,6 @@ export default function RaffleDetail() {
       return;
     }
 
-    const isProfileComplete = 
-      profile?.full_name && 
-      profile?.phone && 
-      profile?.address && 
-      profile?.nif && 
-      profile?.bank_details && 
-      profile?.bi_photo_url;
-
-    if (!isProfileComplete) {
-      navigate('/perfil');
-      return;
-    }
-
     if (profile && profile.balance < (raffle?.price || 0) * buyQuantity) {
       setResult({ success: false, message: "Saldo insuficiente. Por favor, recarregue a sua conta." });
       return;
@@ -157,7 +144,7 @@ export default function RaffleDetail() {
             {[
               { icon: Trophy, label: t('raffle.prize'), value: raffle.main_prize_type === 'cash' ? formatCurrency(raffle.main_prize_value) : raffle.nome },
               { icon: Calendar, label: t('raffle.draw_date'), value: new Date(raffle.draw_date).toLocaleDateString() },
-              { icon: Users, label: t('raffle.total'), value: raffle.total_numbers },
+              { icon: Zap, label: "Sorteio", value: "Instantâneo" },
               { icon: ShieldCheck, label: "Segurança", value: "Verificado" }
             ].map((item, i) => (
               <div key={i} className="rounded-2xl border border-white/5 bg-zinc-900/50 p-4 text-center">
@@ -208,11 +195,6 @@ export default function RaffleDetail() {
                   </button>
                 ))}
               </div>
-              {remaining > 0 && remaining < 10 && (
-                <p className="mt-2 text-xs text-amber-500 font-bold">
-                  Apenas {remaining} {remaining === 1 ? 'bilhete resta' : 'bilhetes restam'}!
-                </p>
-              )}
               {quantity > 1 && (
                 <div className="mt-3 text-right text-sm font-medium text-zinc-400">
                   Total: <span className="text-white">{formatCurrency(raffle.price * quantity)}</span>

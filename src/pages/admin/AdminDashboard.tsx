@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   Wallet,
   Package,
-  DollarSign
+  DollarSign,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Raffle } from '../../lib/supabase';
@@ -32,6 +33,9 @@ export default function AdminDashboard() {
     activeRaffles: 0
   });
   const [loading, setLoading] = useState(true);
+
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -63,14 +67,22 @@ export default function AdminDashboard() {
   }
 
   async function deleteRaffle(id: string) {
-    if (!confirm('Tem certeza que deseja excluir esta rifa?')) return;
+    if (deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+      return;
+    }
     
+    setProcessingId(id);
     try {
       const { error } = await supabase.from('rifas').delete().eq('id', id);
       if (error) throw error;
       setRaffles(prev => prev.filter(r => r.id !== id));
     } catch (error: any) {
       alert('Erro ao excluir rifa: ' + error.message);
+    } finally {
+      setProcessingId(null);
+      setDeleteConfirm(null);
     }
   }
 
@@ -242,22 +254,30 @@ export default function AdminDashboard() {
                         {raffle.status === 'active' ? 'Ativa' : raffle.status === 'completed' ? 'Finalizada' : 'Cancelada'}
                       </span>
                     </td>
-                    <td className="px-4 md:px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/admin/raffles/edit/${raffle.id}`}
-                          className="rounded p-1.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Link>
-                        <button
-                          onClick={() => deleteRaffle(raffle.id)}
-                          className="rounded p-1.5 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-500"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+                        <td className="px-4 md:px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              to={`/admin/raffles/edit/${raffle.id}`}
+                              className="rounded p-1.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => deleteRaffle(raffle.id)}
+                              disabled={processingId === raffle.id}
+                              className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-bold transition-all disabled:opacity-50 ${
+                                deleteConfirm === raffle.id 
+                                  ? 'bg-red-600 text-white animate-pulse' 
+                                  : 'bg-zinc-800 text-zinc-400 hover:bg-red-500/20 hover:text-red-500'
+                              }`}
+                              title={deleteConfirm === raffle.id ? "Clique novamente para confirmar" : "Excluir Rifa"}
+                            >
+                              {processingId === raffle.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                              {deleteConfirm === raffle.id ? 'Confirmar?' : ''}
+                            </button>
+                          </div>
+                        </td>
                   </tr>
                 ))}
               </tbody>

@@ -13,27 +13,57 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 2. Função para lidar com novos usuários (Trigger)
-CREATE OR REPLACE FUNCTION handle_new_user()
+-- 2. Função para auto-confirmar novos usuários (Bypass de SMS/Email)
+CREATE OR REPLACE FUNCTION public.auto_confirm_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  NEW.email_confirmed_at = NOW();
+  NEW.phone_confirmed_at = NOW();
+  NEW.confirmed_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger para auto-confirmar na tabela auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created_confirm ON auth.users;
+CREATE TRIGGER on_auth_user_created_confirm
+  BEFORE INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.auto_confirm_user();
+
+-- 3. Função para lidar com novos usuários (Perfil)
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_email TEXT;
+  v_phone TEXT;
+BEGIN
+  v_email := COALESCE(NEW.email, '');
+  v_phone := NEW.phone;
+
+  -- Se for um email virtual de telefone (ex: 244912345678@telefone.local)
+  -- Extraímos o número para o campo phone e limpamos o campo email
+  IF v_email LIKE '%@telefone.local' THEN
+    v_phone := '+' || split_part(v_email, '@', 1);
+    v_email := '';
+  END IF;
+
   INSERT INTO public.profiles (id, email, is_admin, balance, phone)
   VALUES (
     NEW.id, 
-    COALESCE(NEW.email, ''), 
-    (NEW.email = 'tchivembedelgado@gmail.com'), -- Define como admin se for este email
+    v_email, 
+    (v_email = 'tchivembedelgado@gmail.com'),
     0,
-    NEW.phone
+    v_phone
   )
   ON CONFLICT (id) DO UPDATE SET 
-    email = COALESCE(EXCLUDED.email, profiles.email),
+    email = CASE WHEN EXCLUDED.email <> '' THEN EXCLUDED.email ELSE profiles.email END,
     phone = COALESCE(EXCLUDED.phone, profiles.phone),
     is_admin = (EXCLUDED.email = 'tchivembedelgado@gmail.com');
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. Trigger para criar perfil automaticamente
+-- 4. Trigger para criar perfil automaticamente
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -320,8 +350,20 @@ ALTER TABLE withdrawals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support ENABLE ROW LEVEL SECURITY;
 ALTER TABLE winner_claims ENABLE ROW LEVEL SECURITY;
 
--- Função auxiliar para verificar se é admin sem causar recursão
+-- Função robusta para verificar se é admin (consulta a tabela profiles)
+-- SECURITY DEFINER faz com que a função ignore RLS ao consultar a tabela profiles
 CREATE OR REPLACE FUNCTION is_admin_check()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND is_admin = true
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Função para verificar admin via JWT (evita recursão em políticas da tabela profiles)
+CREATE OR REPLACE FUNCTION is_admin_jwt_check()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN (auth.jwt() ->> 'email' = 'tchivembedelgado@gmail.com');
@@ -336,8 +378,8 @@ DROP POLICY IF EXISTS "Profiles_Admin_Update" ON profiles;
 
 CREATE POLICY "Profiles_Owner_Read" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Profiles_Owner_Update" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Profiles_Admin_Read" ON profiles FOR SELECT USING (is_admin_check());
-CREATE POLICY "Profiles_Admin_Update" ON profiles FOR UPDATE USING (is_admin_check());
+CREATE POLICY "Profiles_Admin_Read" ON profiles FOR SELECT USING (is_admin_jwt_check());
+CREATE POLICY "Profiles_Admin_Update" ON profiles FOR UPDATE USING (is_admin_jwt_check());
 
 -- Rifas
 DROP POLICY IF EXISTS "Rifas_Public_Read" ON rifas;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, X, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency } from '../../lib/utils';
 import BackButton from '../../components/BackButton';
@@ -22,6 +22,9 @@ export default function DepositApproval() {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [approveConfirm, setApproveConfirm] = useState<string | null>(null);
+  const [rejectConfirm, setRejectConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDeposits();
@@ -34,8 +37,19 @@ export default function DepositApproval() {
         .select('*, profiles(email)')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      if (data) setDeposits(data as any);
+      if (error) {
+        console.error('Error fetching deposits:', error);
+        // Fallback to simple fetch if join fails
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('depositos')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (simpleError) throw simpleError;
+        setDeposits(simpleData as any || []);
+      } else if (data) {
+        setDeposits(data as any);
+      }
     } catch (error) {
       console.error('Error fetching deposits:', error);
     } finally {
@@ -44,7 +58,13 @@ export default function DepositApproval() {
   }
 
   async function handleApprove(deposit: Deposit) {
-    if (!confirm(`Aprovar depósito de ${formatCurrency(deposit.amount)} para ${deposit.profiles.email}?`)) return;
+    if (approveConfirm !== deposit.id) {
+      setApproveConfirm(deposit.id);
+      setRejectConfirm(null); // Clear other confirmations for the same item
+      setDeleteConfirm(null);
+      setTimeout(() => setApproveConfirm(null), 3000);
+      return;
+    }
     
     setProcessing(deposit.id);
     try {
@@ -69,11 +89,18 @@ export default function DepositApproval() {
       alert('Erro ao aprovar depósito: ' + error.message);
     } finally {
       setProcessing(null);
+      setApproveConfirm(null);
     }
   }
 
   async function handleReject(deposit: Deposit) {
-    if (!confirm(`Rejeitar depósito de ${formatCurrency(deposit.amount)} para ${deposit.profiles.email}?`)) return;
+    if (rejectConfirm !== deposit.id) {
+      setRejectConfirm(deposit.id);
+      setApproveConfirm(null); // Clear other confirmations for the same item
+      setDeleteConfirm(null);
+      setTimeout(() => setRejectConfirm(null), 3000);
+      return;
+    }
 
     setProcessing(deposit.id);
     try {
@@ -88,6 +115,33 @@ export default function DepositApproval() {
       alert('Erro ao rejeitar depósito: ' + error.message);
     } finally {
       setProcessing(null);
+      setRejectConfirm(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      setApproveConfirm(null);
+      setRejectConfirm(null);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+      return;
+    }
+
+    setProcessing(id);
+    try {
+      const { error } = await supabase
+        .from('depositos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setDeposits(prev => prev.filter(d => d.id !== id));
+    } catch (error: any) {
+      alert('Erro ao eliminar registo: ' + error.message);
+    } finally {
+      setProcessing(null);
+      setDeleteConfirm(null);
     }
   }
 
@@ -127,7 +181,7 @@ export default function DepositApproval() {
                     <td className="px-6 py-4 text-sm text-zinc-400">
                       {new Date(deposit.created_at).toLocaleDateString('pt-AO')}
                     </td>
-                    <td className="px-6 py-4 font-medium">{deposit.profiles.email}</td>
+                    <td className="px-6 py-4 font-medium">{deposit.profiles?.email || 'N/A'}</td>
                     <td className="px-6 py-4 font-bold text-emerald-500">{formatCurrency(deposit.amount)}</td>
                     <td className="px-6 py-4">
                       <a
@@ -150,25 +204,55 @@ export default function DepositApproval() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {deposit.status === 'pending' && (
+                      {deposit.status === 'pending' ? (
                         <div className="flex items-center gap-2">
                           <button
+                            type="button"
                             onClick={() => handleApprove(deposit)}
                             disabled={processing === deposit.id}
-                            className="rounded-lg bg-emerald-600 p-2 text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-                            title="Aprovar"
+                            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 ${
+                              approveConfirm === deposit.id 
+                                ? 'bg-emerald-500 animate-pulse' 
+                                : 'bg-emerald-600 hover:bg-emerald-700'
+                            }`}
+                            title={approveConfirm === deposit.id ? "Clique novamente para aprovar" : "Aprovar"}
                           >
                             {processing === deposit.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                            {approveConfirm === deposit.id ? 'Confirmar?' : 'Aprovar'}
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleReject(deposit)}
                             disabled={processing === deposit.id}
-                            className="rounded-lg bg-red-600 p-2 text-white transition-colors hover:bg-red-700 disabled:opacity-50"
-                            title="Rejeitar"
+                            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 ${
+                              rejectConfirm === deposit.id 
+                                ? 'bg-red-500 animate-pulse' 
+                                : 'bg-red-600 hover:bg-red-700'
+                            }`}
+                            title={rejectConfirm === deposit.id ? "Clique novamente para rejeitar" : "Rejeitar"}
                           >
                             {processing === deposit.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                            {rejectConfirm === deposit.id ? 'Confirmar?' : 'Rejeitar'}
                           </button>
                         </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(deposit.id);
+                          }}
+                          disabled={processing === deposit.id}
+                          className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-all disabled:opacity-50 ${
+                            deleteConfirm === deposit.id 
+                              ? 'bg-red-600 text-white animate-pulse' 
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-red-500/20 hover:text-red-500'
+                          }`}
+                          title={deleteConfirm === deposit.id ? "Clique novamente para confirmar" : "Eliminar do Histórico"}
+                        >
+                          {processing === deposit.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          {deleteConfirm === deposit.id ? 'Confirmar?' : 'Eliminar'}
+                        </button>
                       )}
                     </td>
                   </tr>

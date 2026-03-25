@@ -35,24 +35,11 @@ export default function Deposit() {
     setError(null);
 
     try {
-      // 1. Garantir identificação do usuário e perfil completo
+      // 1. Garantir identificação do usuário
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
         throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
-      }
-
-      const isProfileComplete = 
-        profile?.full_name && 
-        profile?.phone && 
-        profile?.address && 
-        profile?.nif && 
-        profile?.bank_details && 
-        profile?.bi_photo_url;
-
-      if (!isProfileComplete) {
-        navigate('/perfil');
-        return;
       }
 
       if (!file) {

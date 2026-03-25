@@ -1,47 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 const resources = {
-  en: {
-    translation: {
-      "nav": {
-        "home": "Home",
-        "raffles": "Raffles",
-        "dashboard": "Dashboard",
-        "admin": "Admin",
-        "login": "Login",
-        "register": "Register",
-        "logout": "Logout"
-      },
-      "home": {
-        "hero_title": "Win Big with RifaAngola",
-        "hero_subtitle": "The most transparent and exciting raffle platform in Angola.",
-        "cta": "Explore Raffles",
-        "how_it_works": "How it Works",
-        "step1": "Choose a Raffle",
-        "step2": "Buy a Number",
-        "step3": "Win Prizes",
-        "motivational": "Your luck is just one click away. Join thousands of winners today!"
-      },
-      "raffle": {
-        "buy_number": "Buy Number",
-        "price": "Price",
-        "total": "Total Numbers",
-        "sold": "Sold",
-        "draw_date": "Draw Date",
-        "prize": "Prize",
-        "progress": "Progress",
-        "win_msg": "Congratulations! You won {{amount}} Kz",
-        "lose_msg": "No instant prize, but you are in the draw!"
-      },
-      "dashboard": {
-        "balance": "Balance",
-        "my_numbers": "My Numbers",
-        "notifications": "Notifications"
-      }
-    }
-  },
   pt: {
     translation: {
       "nav": {
@@ -54,7 +14,8 @@ const resources = {
         "logout": "Sair"
       },
       "home": {
-        "hero_title": "Ganhe Grande com a RifaAngola",
+        "hero_title": "Ganhe Grande com a RIFASANGOLA",
+        "hero_tagline": "FÁBIO REVOADA 046",
         "hero_subtitle": "A plataforma de rifas mais transparente e emocionante de Angola.",
         "cta": "Explorar Rifas",
         "how_it_works": "Como Funciona",
@@ -84,10 +45,10 @@ const resources = {
 };
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
+    lng: 'pt',
     fallbackLng: 'pt',
     interpolation: {
       escapeValue: false

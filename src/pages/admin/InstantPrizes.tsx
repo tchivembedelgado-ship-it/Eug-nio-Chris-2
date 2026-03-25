@@ -24,6 +24,7 @@ export default function InstantPrizes() {
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     raffle_id: '',
@@ -94,14 +95,22 @@ export default function InstantPrizes() {
   }
 
   async function deletePrize(id: string) {
-    if (!confirm('Excluir este prêmio instantâneo?')) return;
+    if (deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+      return;
+    }
     
+    setSaving(true);
     try {
       const { error } = await supabase.from('premios_escondidos').delete().eq('id', id);
       if (error) throw error;
       setPrizes(prev => prev.filter(p => p.id !== id));
     } catch (error: any) {
       alert('Erro ao excluir prêmio: ' + error.message);
+    } finally {
+      setSaving(false);
+      setDeleteConfirm(null);
     }
   }
 
@@ -246,10 +255,18 @@ export default function InstantPrizes() {
                         </td>
                         <td className="px-6 py-4">
                           <button
+                            type="button"
                             onClick={() => deletePrize(prize.id)}
-                            className="rounded p-1.5 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-500"
+                            disabled={saving}
+                            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold transition-all disabled:opacity-50 ${
+                              deleteConfirm === prize.id
+                                ? 'bg-red-600 text-white animate-pulse'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-red-500/20 hover:text-red-500'
+                            }`}
+                            title={deleteConfirm === prize.id ? "Clique novamente para confirmar" : "Excluir Prêmio"}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {saving && deleteConfirm === prize.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            {deleteConfirm === prize.id ? 'Confirmar?' : 'Excluir'}
                           </button>
                         </td>
                       </tr>
