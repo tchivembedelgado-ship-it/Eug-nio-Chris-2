@@ -73,9 +73,13 @@ export default function Navbar() {
                   </div>
                   <Link
                     to="/dashboard"
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black shadow-[0_0_10px_rgba(0,255,0,0.3)] transition-transform active:scale-90"
+                    className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary text-black shadow-[0_0_10px_rgba(0,255,0,0.3)] transition-transform active:scale-90"
                   >
-                    <User className="h-4 w-4" />
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
                   </Link>
                 </>
               )}
@@ -121,9 +125,13 @@ export default function Navbar() {
                   <Link
                     to="/dashboard"
                     title={user.email?.endsWith('@telefone.local') ? `+${user.email.split('@')[0]}` : (user.email || user.phone)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-black shadow-[0_0_20px_rgba(0,255,0,0.2)] transition-all hover:scale-110 hover:shadow-[0_0_25px_rgba(0,255,0,0.4)]"
+                    className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-primary text-black shadow-[0_0_20px_rgba(0,255,0,0.2)] transition-all hover:scale-110 hover:shadow-[0_0_25px_rgba(0,255,0,0.4)]"
                   >
-                    <User className="h-6 w-6" />
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <User className="h-6 w-6" />
+                    )}
                   </Link>
 
                   <button
@@ -257,8 +265,12 @@ export default function Navbar() {
                         onClick={closeMenu}
                         className="flex items-center gap-4 rounded-2xl bg-white/5 p-5 text-base font-bold text-white transition-all active:scale-95 active:bg-white/10"
                       >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-black">
-                          <User className="h-6 w-6" />
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-primary text-black">
+                          {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                          ) : (
+                            <User className="h-6 w-6" />
+                          )}
                         </div>
                         Minha Conta
                       </Link>

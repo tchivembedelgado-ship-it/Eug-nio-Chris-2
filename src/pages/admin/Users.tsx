@@ -184,6 +184,21 @@ export default function AdminUsers() {
                     </div>
                   </div>
 
+                  {selectedUser.avatar_url && (
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Foto de Perfil</label>
+                      <div className="mt-2 h-24 w-24 overflow-hidden rounded-full border-2 border-white/10 bg-black/40">
+                        <img 
+                          src={selectedUser.avatar_url} 
+                          alt="Avatar" 
+                          className="h-full w-full object-cover cursor-pointer hover:scale-110 transition-transform"
+                          onClick={() => window.open(selectedUser.avatar_url, '_blank')}
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {selectedUser.bi_photo_url && (
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Foto do BI</label>

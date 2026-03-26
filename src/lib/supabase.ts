@@ -28,6 +28,7 @@ export type Profile = {
   nif?: string;
   bank_details?: string;
   bi_photo_url?: string;
+  avatar_url?: string;
   created_at: string;
 };
 

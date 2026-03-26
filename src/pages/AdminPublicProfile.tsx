@@ -34,6 +34,7 @@ interface Comment {
   profiles: {
     full_name: string;
     bi_photo_url: string;
+    avatar_url?: string;
     is_admin?: boolean;
   };
 }
@@ -55,11 +56,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onReply,
   isReply = false 
 }) => {
+  const avatarUrl = comment.profiles?.avatar_url || comment.profiles?.bi_photo_url;
+
   return (
     <div className="group flex gap-3">
       <div className={`${isReply ? 'h-6 w-6' : 'h-8 w-8'} overflow-hidden rounded-full bg-zinc-800 flex-shrink-0`}>
-        {comment.profiles?.bi_photo_url ? (
-          <img src={comment.profiles.bi_photo_url} alt="Avatar" className="h-full w-full object-cover" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-zinc-800">
             <User className={`${isReply ? 'h-3 w-3' : 'h-4 w-4'} text-zinc-600`} />
@@ -283,6 +286,7 @@ function PostCard({ post, currentUser, isAdmin }: PostCardProps) {
           profiles:user_id (
             full_name,
             bi_photo_url,
+            avatar_url,
             is_admin
           )
         `)
@@ -350,6 +354,7 @@ function PostCard({ post, currentUser, isAdmin }: PostCardProps) {
           profiles:user_id (
             full_name,
             bi_photo_url,
+            avatar_url,
             is_admin
           )
         `)

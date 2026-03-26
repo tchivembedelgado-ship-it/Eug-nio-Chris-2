@@ -11,6 +11,7 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
@@ -19,6 +20,7 @@ export default function Profile() {
     nif: profile?.nif || '',
     bank_details: profile?.bank_details || '',
     bi_photo_url: profile?.bi_photo_url || '',
+    avatar_url: profile?.avatar_url || '',
   });
 
   const isProfileComplete = 
@@ -29,7 +31,7 @@ export default function Profile() {
     formData.bank_details && 
     formData.bi_photo_url;
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'bi' | 'avatar') => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
@@ -39,20 +41,26 @@ export default function Profile() {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `bi-photos/${fileName}`;
+      const bucket = 'bi-photos';
+      const filePath = `${type === 'bi' ? 'bi-photos' : 'avatars'}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('bi-photos')
+        .from(bucket)
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('bi-photos')
+        .from(bucket)
         .getPublicUrl(filePath);
 
-      setFormData(prev => ({ ...prev, bi_photo_url: publicUrl }));
-      setMessage({ type: 'success', text: 'Foto do BI carregada com sucesso!' });
+      if (type === 'bi') {
+        setFormData(prev => ({ ...prev, bi_photo_url: publicUrl }));
+        setMessage({ type: 'success', text: 'Foto do BI carregada com sucesso!' });
+      } else {
+        setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+        setMessage({ type: 'success', text: 'Foto de perfil carregada com sucesso!' });
+      }
     } catch (err: any) {
       setMessage({ type: 'error', text: 'Erro ao carregar foto: ' + err.message });
     } finally {
@@ -82,6 +90,7 @@ export default function Profile() {
           nif: formData.nif,
           bank_details: formData.bank_details,
           bi_photo_url: formData.bi_photo_url,
+          avatar_url: formData.avatar_url,
         })
         .eq('id', user.id);
 
@@ -122,6 +131,39 @@ export default function Profile() {
         className="overflow-hidden rounded-[2.5rem] border border-white/10 bg-zinc-900/50 shadow-2xl backdrop-blur-sm"
       >
         <form onSubmit={handleSubmit} className="p-8 sm:p-12">
+          {/* Avatar Section */}
+          <div className="mb-12 flex flex-col items-center justify-center space-y-4">
+            <div className="relative group">
+              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-emerald-500/30 bg-zinc-800 shadow-xl transition-transform group-hover:scale-105">
+                {formData.avatar_url ? (
+                  <img src={formData.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+                    <User className="h-12 w-12 text-zinc-600" />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg transition-all hover:bg-emerald-500 hover:scale-110 active:scale-95"
+              >
+                <Camera className="h-5 w-5" />
+              </button>
+              <input
+                type="file"
+                ref={avatarInputRef}
+                onChange={(e) => handleFileUpload(e, 'avatar')}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-white">Foto de Perfil</h3>
+              <p className="text-xs text-zinc-500">Esta foto será visível nos seus comentários.</p>
+            </div>
+          </div>
+
           <div className="grid gap-8 md:grid-cols-2">
             {/* Personal Info */}
             <div className="space-y-6">
@@ -232,7 +274,7 @@ export default function Profile() {
                 <input
                   type="file"
                   ref={fileInputRef}
-                  onChange={handleFileUpload}
+                  onChange={(e) => handleFileUpload(e, 'bi')}
                   accept="image/*"
                   className="hidden"
                 />

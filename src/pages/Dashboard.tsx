@@ -49,9 +49,25 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <BackButton />
-      <div className="mb-10">
-        <h1 className="text-4xl font-black tracking-tighter">{t('nav.dashboard')}</h1>
-        <p className="text-zinc-500">Bem-vindo de volta, {user?.email}</p>
+      <div className="mb-10 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-black tracking-tighter">{t('nav.dashboard')}</h1>
+          <p className="text-zinc-500">Bem-vindo de volta, {profile?.full_name || user?.email}</p>
+        </div>
+        <Link to="/perfil" className="group relative">
+          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-white/10 bg-zinc-800 transition-transform group-hover:scale-105">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+                <User className="h-8 w-8 text-zinc-600" />
+              </div>
+            )}
+          </div>
+          <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg">
+            <User className="h-3 w-3" />
+          </div>
+        </Link>
       </div>
 
       {/* Profile Completion Warning for Winners */}

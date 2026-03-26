@@ -34,6 +34,7 @@ interface Comment {
   profiles: {
     full_name: string;
     bi_photo_url: string;
+    avatar_url?: string;
     is_admin?: boolean;
   };
 }
@@ -61,6 +62,7 @@ function CommentSection({ postId, currentUser }: { postId: string; currentUser: 
           profiles:user_id (
             full_name,
             bi_photo_url,
+            avatar_url,
             is_admin
           )
         `)
@@ -128,6 +130,7 @@ function CommentSection({ postId, currentUser }: { postId: string; currentUser: 
           profiles:user_id (
             full_name,
             bi_photo_url,
+            avatar_url,
             is_admin
           )
         `)
@@ -183,85 +186,91 @@ function CommentSection({ postId, currentUser }: { postId: string; currentUser: 
         </div>
       ) : (
         <div className="space-y-4 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-800">
-          {comments.filter(c => !c.parent_id).map(comment => (
-            <div key={comment.id} className="space-y-2">
-              <div className="flex gap-2">
-                <div className="h-6 w-6 overflow-hidden rounded-full bg-zinc-800">
-                  {comment.profiles?.bi_photo_url ? (
-                    <img src={comment.profiles.bi_photo_url} alt="Avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-zinc-800">
-                      <User className="h-3 w-3 text-zinc-600" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 rounded-xl bg-zinc-800/50 p-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-white">{comment.profiles?.full_name}</span>
-                    {comment.profiles?.is_admin && (
-                      <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[7px] font-black text-amber-500 border border-amber-500/30">ADM</span>
+          {comments.filter(c => !c.parent_id).map(comment => {
+            const avatarUrl = comment.profiles?.avatar_url || comment.profiles?.bi_photo_url;
+            return (
+              <div key={comment.id} className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="h-6 w-6 overflow-hidden rounded-full bg-zinc-800">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+                        <User className="h-3 w-3 text-zinc-600" />
+                      </div>
                     )}
-                    <button onClick={() => handleDeleteComment(comment.id)} className="ml-auto text-zinc-600 hover:text-red-500">
-                      <Trash2 className="h-3 w-3" />
+                  </div>
+                  <div className="flex-1 rounded-xl bg-zinc-800/50 p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-white">{comment.profiles?.full_name}</span>
+                      {comment.profiles?.is_admin && (
+                        <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[7px] font-black text-amber-500 border border-amber-500/30">ADM</span>
+                      )}
+                      <button onClick={() => handleDeleteComment(comment.id)} className="ml-auto text-zinc-600 hover:text-red-500">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-400">{comment.comentario}</p>
+                    
+                    {comment.media_url && (
+                      <div className="mt-1 overflow-hidden rounded bg-zinc-900">
+                        {comment.media_type === 'image' ? (
+                          <img src={comment.media_url} alt="Media" className="max-h-32 w-full object-contain" />
+                        ) : (
+                          <video src={comment.media_url} controls className="max-h-32 w-full" />
+                        )}
+                      </div>
+                    )}
+
+                    <button onClick={() => setReplyTo(comment.id)} className="mt-1 flex items-center gap-1 text-[8px] font-bold uppercase text-zinc-600 hover:text-primary">
+                      <Reply className="h-2 w-2" /> Responder
                     </button>
                   </div>
-                  <p className="text-xs text-zinc-400">{comment.comentario}</p>
-                  
-                  {comment.media_url && (
-                    <div className="mt-1 overflow-hidden rounded bg-zinc-900">
-                      {comment.media_type === 'image' ? (
-                        <img src={comment.media_url} alt="Media" className="max-h-32 w-full object-contain" />
-                      ) : (
-                        <video src={comment.media_url} controls className="max-h-32 w-full" />
-                      )}
-                    </div>
-                  )}
-
-                  <button onClick={() => setReplyTo(comment.id)} className="mt-1 flex items-center gap-1 text-[8px] font-bold uppercase text-zinc-600 hover:text-primary">
-                    <Reply className="h-2 w-2" /> Responder
-                  </button>
                 </div>
-              </div>
 
-              {/* Replies */}
-              <div className="ml-6 space-y-2 border-l border-white/5 pl-2">
-                {comments.filter(c => c.parent_id === comment.id).map(reply => (
-                  <div key={reply.id} className="flex gap-2">
-                    <div className="h-5 w-5 overflow-hidden rounded-full bg-zinc-800">
-                      {reply.profiles?.bi_photo_url ? (
-                        <img src={reply.profiles.bi_photo_url} alt="Avatar" className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-zinc-800">
-                          <User className="h-2 w-2 text-zinc-600" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 rounded-xl bg-zinc-800/50 p-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-white">{reply.profiles?.full_name}</span>
-                        {reply.profiles?.is_admin && (
-                          <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[7px] font-black text-amber-500 border border-amber-500/30">ADM</span>
-                        )}
-                        <button onClick={() => handleDeleteComment(reply.id)} className="ml-auto text-zinc-600 hover:text-red-500">
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <p className="text-xs text-zinc-400">{reply.comentario}</p>
-                      {reply.media_url && (
-                        <div className="mt-1 overflow-hidden rounded bg-zinc-900">
-                          {reply.media_type === 'image' ? (
-                            <img src={reply.media_url} alt="Media" className="max-h-32 w-full object-contain" />
+                {/* Replies */}
+                <div className="ml-6 space-y-2 border-l border-white/5 pl-2">
+                  {comments.filter(c => c.parent_id === comment.id).map(reply => {
+                    const replyAvatarUrl = reply.profiles?.avatar_url || reply.profiles?.bi_photo_url;
+                    return (
+                      <div key={reply.id} className="flex gap-2">
+                        <div className="h-5 w-5 overflow-hidden rounded-full bg-zinc-800">
+                          {replyAvatarUrl ? (
+                            <img src={replyAvatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                           ) : (
-                            <video src={reply.media_url} controls className="max-h-32 w-full" />
+                            <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+                              <User className="h-2 w-2 text-zinc-600" />
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                        <div className="flex-1 rounded-xl bg-zinc-800/50 p-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-white">{reply.profiles?.full_name}</span>
+                            {reply.profiles?.is_admin && (
+                              <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[7px] font-black text-amber-500 border border-amber-500/30">ADM</span>
+                            )}
+                            <button onClick={() => handleDeleteComment(reply.id)} className="ml-auto text-zinc-600 hover:text-red-500">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-zinc-400">{reply.comentario}</p>
+                          {reply.media_url && (
+                            <div className="mt-1 overflow-hidden rounded bg-zinc-900">
+                              {reply.media_type === 'image' ? (
+                                <img src={reply.media_url} alt="Media" className="max-h-32 w-full object-contain" />
+                              ) : (
+                                <video src={reply.media_url} controls className="max-h-32 w-full" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
