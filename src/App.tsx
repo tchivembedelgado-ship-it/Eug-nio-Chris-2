@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -25,6 +25,8 @@ import AdminSupport from './pages/admin/AdminSupport';
 import InstantPrizes from './pages/admin/InstantPrizes';
 import AdminClaims from './pages/admin/AdminClaims';
 import AdminFinance from './pages/admin/AdminFinance';
+import AdminProfileConfig from './pages/admin/AdminProfileConfig';
+import AdminPublicProfile from './pages/AdminPublicProfile';
 import './i18n';
 
 function ProtectedRoute({ children, adminOnly = false, requireProfile = false }: { children: React.ReactNode, adminOnly?: boolean, requireProfile?: boolean }) {
@@ -187,6 +189,16 @@ export default function App() {
                   <AdminFinance />
                 </ProtectedRoute>
               } />
+
+              <Route path="/admin/config-perfil" element={
+                <ProtectedRoute adminOnly>
+                  <AdminProfileConfig />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/sobre-adm" element={
+                <AdminPublicProfile />
+              } />
             </Routes>
           </main>
           
@@ -194,6 +206,14 @@ export default function App() {
             <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
               <div className="mb-8 flex justify-center">
                 <Logo className="h-12" />
+              </div>
+              <div className="mb-4 flex justify-center gap-6">
+                <Link to="/sobre-adm" className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
+                  Sobre o Admin
+                </Link>
+                <Link to="/suporte" className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
+                  Suporte
+                </Link>
               </div>
               <p className="text-sm text-zinc-500">
                 © 2026 RifaAngola. Todos os direitos reservados. Jogue com responsabilidade. <span className="ml-2 inline-block rounded border border-zinc-700 px-1.5 py-0.5 text-[10px] font-bold text-zinc-400">+18</span>

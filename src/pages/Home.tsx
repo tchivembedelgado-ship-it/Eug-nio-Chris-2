@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Trophy, Shield, Zap, ArrowRight, Star } from 'lucide-react';
-import { supabase } from '@/src/lib/supabase';
-import { formatCurrency } from '@/src/lib/utils';
+import { supabase } from '../lib/supabase';
+import { formatCurrency } from '../lib/utils';
 
 export default function Home() {
   const { t } = useTranslation();

@@ -15,14 +15,15 @@ import {
   Wallet,
   Package,
   DollarSign,
-  Loader2
+  Loader2,
+  UserCircle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Raffle } from '../../lib/supabase';
 import { formatCurrency } from '../../lib/utils';
-import BackButton from '@/src/components/BackButton';
+import BackButton from '../../components/BackButton';
 
-import { useAuth } from '@/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -182,6 +183,10 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Link to="/admin/config-perfil" className="flex items-center gap-3 rounded-xl border border-white/5 bg-zinc-900/50 p-4 transition-colors hover:bg-zinc-900">
+            <UserCircle className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium">Perfil Social (Posts)</span>
+          </Link>
           <Link to="/admin/support" className="flex items-center gap-3 rounded-xl border border-white/5 bg-zinc-900/50 p-4 transition-colors hover:bg-zinc-900">
             <MessageSquare className="h-5 w-5 text-indigo-500" />
             <span className="text-sm font-medium">Suporte ao Cliente</span>
@@ -194,9 +199,9 @@ export default function AdminDashboard() {
             <Package className="h-5 w-5 text-emerald-500" />
             <span className="text-sm font-medium">Ganhadores de Prêmios</span>
           </Link>
-          <Link to="/admin/settings" className="flex items-center gap-3 rounded-xl border border-white/5 bg-zinc-900/50 p-4 transition-colors hover:bg-zinc-900">
-            <Settings className="h-5 w-5 text-zinc-400" />
-            <span className="text-sm font-medium">Configurações</span>
+          <Link to="/admin/finance" className="flex items-center gap-3 rounded-xl border border-white/5 bg-zinc-900/50 p-4 transition-colors hover:bg-zinc-900">
+            <TrendingUp className="h-5 w-5 text-zinc-400" />
+            <span className="text-sm font-medium">Relatórios Financeiros</span>
           </Link>
         </div>
 

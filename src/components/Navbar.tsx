@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/src/context/AuthContext';
-import { LogOut, User, LayoutDashboard, Home, Wallet, Menu, X, Ticket } from 'lucide-react';
-import { formatCurrency } from '@/src/lib/utils';
+import { useAuth } from '../context/AuthContext';
+import { LogOut, User, LayoutDashboard, Home, Wallet, Menu, X, Ticket, Settings, Globe } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './Logo';
 
@@ -38,6 +38,9 @@ export default function Navbar() {
               </Link>
               <Link to="/rifas" className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
                 {t('nav.raffles')}
+              </Link>
+              <Link to="/sobre-adm" className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
+                Sobre o Admin
               </Link>
             </div>
           </div>
@@ -96,14 +99,23 @@ export default function Navbar() {
                 
                 <div className="hidden items-center gap-2 md:flex">
                   {profile?.is_admin && (
-                    <Link
-                      to="/admin"
-                      className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_15px_rgba(79,70,229,0.4)]"
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      <span className="hidden lg:inline">Painel Administrador</span>
-                      <span className="lg:hidden">Admin</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to="/admin"
+                        className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_15px_rgba(79,70,229,0.4)]"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span className="hidden lg:inline">Painel Administrador</span>
+                        <span className="lg:hidden">Admin</span>
+                      </Link>
+                      <Link
+                        to="/admin/config-perfil"
+                        title="Configurar Perfil"
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-all hover:bg-zinc-700 hover:text-white"
+                      >
+                        <Settings className="h-5 w-5" />
+                      </Link>
+                    </div>
                   )}
 
                   <Link
@@ -208,19 +220,37 @@ export default function Navbar() {
                     <Ticket className="h-6 w-6 text-indigo-400" />
                     Rifas
                   </Link>
+                  <Link
+                    to="/sobre-adm"
+                    onClick={closeMenu}
+                    className="flex items-center gap-4 rounded-2xl bg-white/5 p-5 text-base font-bold text-white transition-all active:scale-95 active:bg-white/10"
+                  >
+                    <Globe className="h-6 w-6 text-emerald-400" />
+                    Sobre o Admin
+                  </Link>
                   
                   {user ? (
                     <>
                       <div className="my-4 h-px bg-white/10" />
                       {profile?.is_admin && (
-                        <Link
-                          to="/admin"
-                          onClick={closeMenu}
-                          className="flex items-center gap-4 rounded-2xl bg-indigo-500/10 p-5 text-base font-bold text-indigo-400 transition-all active:scale-95 active:bg-indigo-500/20"
-                        >
-                          <LayoutDashboard className="h-6 w-6" />
-                          Painel Admin
-                        </Link>
+                        <>
+                          <Link
+                            to="/admin"
+                            onClick={closeMenu}
+                            className="flex items-center gap-4 rounded-2xl bg-indigo-500/10 p-5 text-base font-bold text-indigo-400 transition-all active:scale-95 active:bg-indigo-500/20"
+                          >
+                            <LayoutDashboard className="h-6 w-6" />
+                            Painel Admin
+                          </Link>
+                          <Link
+                            to="/admin/config-perfil"
+                            onClick={closeMenu}
+                            className="flex items-center gap-4 rounded-2xl bg-zinc-800/50 p-5 text-base font-bold text-zinc-400 transition-all active:scale-95 active:bg-zinc-800/80"
+                          >
+                            <Settings className="h-6 w-6" />
+                            Configurar Perfil
+                          </Link>
+                        </>
                       )}
                       <Link
                         to="/dashboard"
@@ -281,5 +311,5 @@ export default function Navbar() {
         )}
       </AnimatePresence>
     </>
-  );;
+  );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
