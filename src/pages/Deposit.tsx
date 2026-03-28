@@ -138,7 +138,7 @@ export default function Deposit() {
               </div>
               <div>
                 <p className="text-xs font-bold uppercase text-zinc-400">Banco Sol</p>
-                <p className="text-lg font-black text-zinc-900">IBAN 004400009104522410153</p>
+                <p className="text-base sm:text-lg font-black text-zinc-900 break-all">IBAN 004400009104522410153</p>
               </div>
             </div>
 

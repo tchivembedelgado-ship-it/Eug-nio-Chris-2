@@ -700,7 +700,7 @@ export default function AdminProfileConfig() {
                   >
                     <button
                       onClick={() => handleDeletePost(post.id)}
-                      className="absolute right-2 top-2 rounded-lg bg-red-500/10 p-2 text-red-500 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500 hover:text-white"
+                      className="absolute right-2 top-2 rounded-lg bg-red-500/10 p-2 text-red-500 transition-all hover:bg-red-500 hover:text-white border border-red-500/20"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

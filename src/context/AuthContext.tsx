@@ -65,22 +65,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Real-time profile updates (balance, is_admin, etc.)
+    console.log('Auth: Configurando subscription para perfil:', user?.id);
     const profileSubscription = supabase
-      .channel('profile-changes')
+      .channel(`profile_${user?.id || 'guest'}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: user ? `id=eq.${user.id}` : undefined,
+          filter: user?.id ? `id=eq.${user.id}` : undefined,
         },
         (payload) => {
-          console.log('Auth: Atualização em tempo real recebida:', payload.new);
-          setProfile(prev => prev ? { ...prev, ...payload.new } : (payload.new as Profile));
+          console.log('Auth: Atualização em tempo real do perfil recebida:', payload.new);
+          setProfile(prev => {
+            const updated = prev ? { ...prev, ...payload.new } : (payload.new as Profile);
+            console.log('Auth: Novo perfil definido via Realtime:', updated.balance);
+            return updated;
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Auth: Status da subscription do perfil:', status);
+      });
 
     return () => {
       subscription.unsubscribe();

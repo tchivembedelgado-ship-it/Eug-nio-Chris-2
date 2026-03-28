@@ -56,7 +56,7 @@ export default function Register() {
         });
       }
 
-      navigate('/dashboard');
+      navigate('/perfil');
     } catch (err: any) {
       setError(err.message);
     } finally {

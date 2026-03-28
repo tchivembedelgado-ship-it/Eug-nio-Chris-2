@@ -47,7 +47,7 @@ export default function Login() {
 
       if (loginError) throw loginError;
       
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       setError(err.message === 'Invalid login credentials' ? 'Credenciais inválidas. Verifique os seus dados.' : err.message);
     } finally {

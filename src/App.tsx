@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import Transactions from './pages/Transactions';
 import MyPrizes from './pages/MyPrizes';
 import Logo from './components/Logo';
+import Footer from './components/Footer';
 import ProfileGuard from './components/ProfileGuard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import RaffleForm from './pages/admin/RaffleForm';
@@ -26,7 +27,9 @@ import InstantPrizes from './pages/admin/InstantPrizes';
 import AdminClaims from './pages/admin/AdminClaims';
 import AdminFinance from './pages/admin/AdminFinance';
 import AdminProfileConfig from './pages/admin/AdminProfileConfig';
+import AdminUsers from './pages/admin/AdminUsers';
 import AdminPublicProfile from './pages/AdminPublicProfile';
+import Notifications from './pages/Notifications';
 import './i18n';
 
 function ProtectedRoute({ children, adminOnly = false, requireProfile = false }: { children: React.ReactNode, adminOnly?: boolean, requireProfile?: boolean }) {
@@ -124,6 +127,12 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/notificacoes" element={
+                <ProtectedRoute requireProfile={false}>
+                  <Notifications />
+                </ProtectedRoute>
+              } />
+
               <Route path="/transacoes" element={
                 <ProtectedRoute requireProfile={false}>
                   <Transactions />
@@ -196,30 +205,19 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/admin/users" element={
+                <ProtectedRoute adminOnly>
+                  <AdminUsers />
+                </ProtectedRoute>
+              } />
+
               <Route path="/sobre-adm" element={
                 <AdminPublicProfile />
               } />
             </Routes>
           </main>
           
-          <footer className="border-t border-white/5 bg-zinc-900/30 py-12">
-            <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-              <div className="mb-8 flex justify-center">
-                <Logo className="h-12" />
-              </div>
-              <div className="mb-4 flex justify-center gap-6">
-                <Link to="/sobre-adm" className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
-                  Sobre o Admin
-                </Link>
-                <Link to="/suporte" className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
-                  Suporte
-                </Link>
-              </div>
-              <p className="text-sm text-zinc-500">
-                © 2026 RifaAngola. Todos os direitos reservados. Jogue com responsabilidade. <span className="ml-2 inline-block rounded border border-zinc-700 px-1.5 py-0.5 text-[10px] font-bold text-zinc-400">+18</span>
-              </p>
-            </div>
-          </footer>
+          <Footer />
         </div>
       </Router>
     </AuthProvider>

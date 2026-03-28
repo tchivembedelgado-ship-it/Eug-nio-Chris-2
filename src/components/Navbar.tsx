@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User, LayoutDashboard, Home, Wallet, Menu, X, Ticket, Settings, Globe } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Home, Wallet, Menu, X, Ticket, Settings, Globe, Bell, MessageSquare } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './Logo';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const { t } = useTranslation();
@@ -42,6 +43,9 @@ export default function Navbar() {
               <Link to="/sobre-adm" className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
                 Sobre o Admin
               </Link>
+              <Link to={profile?.is_admin ? "/admin/support" : "/suporte"} className="text-sm font-medium text-zinc-400 transition-colors hover:text-white">
+                Suporte
+              </Link>
             </div>
           </div>
 
@@ -59,6 +63,7 @@ export default function Navbar() {
               
               {user && (
                 <>
+                  <NotificationBell />
                   <div className="flex items-center gap-1 rounded-full bg-primary/10 pl-2 pr-1 py-1">
                     <Wallet className="h-3 w-3 text-primary" />
                     <span className="text-[10px] font-bold text-primary">
@@ -102,6 +107,7 @@ export default function Navbar() {
                 </div>
                 
                 <div className="hidden items-center gap-2 md:flex">
+                  <NotificationBell />
                   {profile?.is_admin && (
                     <div className="flex items-center gap-2">
                       <Link
@@ -235,6 +241,14 @@ export default function Navbar() {
                   >
                     <Globe className="h-6 w-6 text-emerald-400" />
                     Sobre o Admin
+                  </Link>
+                  <Link
+                    to={profile?.is_admin ? "/admin/support" : "/suporte"}
+                    onClick={closeMenu}
+                    className="flex items-center gap-4 rounded-2xl bg-white/5 p-5 text-base font-bold text-white transition-all active:scale-95 active:bg-white/10"
+                  >
+                    <MessageSquare className="h-6 w-6 text-orange-400" />
+                    Suporte
                   </Link>
                   
                   {user ? (

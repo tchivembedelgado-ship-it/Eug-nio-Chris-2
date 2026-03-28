@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/src/context/AuthContext';
 import { supabase } from '@/src/lib/supabase';
 import { formatCurrency } from '@/src/lib/utils';
-import { History, ArrowUpCircle, ArrowDownCircle, Trophy, Loader2, Search, Filter } from 'lucide-react';
+import { History, ArrowUpCircle, ArrowDownCircle, Trophy, Loader2, Search, Filter, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
 import BackButton from '@/src/components/BackButton';
 
 type Transaction = {
   id: string;
-  type: 'deposit' | 'purchase' | 'win' | 'withdrawal';
+  type: 'deposit' | 'purchase' | 'win' | 'withdrawal' | 'gift';
   amount: number;
   description: string;
   status: string;
@@ -20,7 +20,7 @@ export default function Transactions() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'deposit' | 'purchase' | 'win' | 'withdrawal'>('all');
+  const [filter, setFilter] = useState<'all' | 'deposit' | 'purchase' | 'win' | 'withdrawal' | 'gift'>('all');
 
   useEffect(() => {
     if (!user) return;
@@ -45,6 +45,13 @@ export default function Transactions() {
       // Fetch Withdrawals
       const { data: withdrawals } = await supabase
         .from('withdrawals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      // Fetch Wallet History (Gifts, etc)
+      const { data: walletHistory } = await supabase
+        .from('wallet_history')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -101,6 +108,18 @@ export default function Transactions() {
         }
       });
 
+      // Process Wallet History (Gifts)
+      walletHistory?.forEach(wh => {
+        history.push({
+          id: wh.id,
+          type: wh.type as any,
+          amount: wh.amount,
+          description: wh.description || 'Transação na carteira',
+          status: 'completed',
+          created_at: wh.created_at
+        });
+      });
+
       // Sort by date
       history.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
@@ -126,7 +145,7 @@ export default function Transactions() {
         </div>
 
         <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-zinc-900/50 p-2 overflow-x-auto">
-          {(['all', 'deposit', 'purchase', 'win', 'withdrawal'] as const).map((f) => (
+          {(['all', 'deposit', 'purchase', 'win', 'withdrawal', 'gift'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -134,7 +153,7 @@ export default function Transactions() {
                 filter === f ? 'bg-emerald-600 text-white' : 'text-zinc-500 hover:bg-white/5'
               }`}
             >
-              {f === 'all' ? 'Tudo' : f === 'deposit' ? 'Depósitos' : f === 'purchase' ? 'Compras' : f === 'win' ? 'Prémios' : 'Levantamentos'}
+              {f === 'all' ? 'Tudo' : f === 'deposit' ? 'Depósitos' : f === 'purchase' ? 'Compras' : f === 'win' ? 'Prémios' : f === 'withdrawal' ? 'Levantamentos' : 'Presentes'}
             </button>
           ))}
         </div>
@@ -152,12 +171,12 @@ export default function Transactions() {
             >
               <div className="flex items-center gap-6">
                 <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
-                  t.type === 'win' ? 'bg-yellow-500/10 text-yellow-500' :
+                  t.type === 'win' || t.type === 'gift' ? 'bg-yellow-500/10 text-yellow-500' :
                   t.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-500' :
                   t.type === 'withdrawal' ? 'bg-blue-500/10 text-blue-500' :
                   'bg-red-500/10 text-red-500'
                 }`}>
-                  {t.type === 'win' ? <Trophy className="h-7 w-7" /> :
+                  {t.type === 'win' || t.type === 'gift' ? <Gift className="h-7 w-7" /> :
                    t.type === 'deposit' ? <ArrowUpCircle className="h-7 w-7" /> :
                    t.type === 'withdrawal' ? <ArrowDownCircle className="h-7 w-7 rotate-180" /> :
                    <ArrowDownCircle className="h-7 w-7" />}

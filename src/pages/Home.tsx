@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { Trophy, Shield, Zap, ArrowRight, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Trophy, Shield, Zap, ArrowRight, Star, MessageSquare, User, Loader2, Send, Image as ImageIcon, Video, Reply } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
+import { useAuth } from '../context/AuthContext';
+import { PostCard, Post, AdminSettings } from '../components/AdminPosts';
 
 export default function Home() {
   const { t } = useTranslation();
+  const { user, profile } = useAuth();
   const [winners, setWinners] = useState<{ user_email: string, prize_amount: number, raffle_name: string }[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
+  const [loadingPosts, setLoadingPosts] = useState(true);
 
   useEffect(() => {
     async function fetchWinners() {
@@ -27,7 +33,35 @@ export default function Home() {
         })));
       }
     }
+
+    async function fetchAdminData() {
+      try {
+        setLoadingPosts(true);
+        // Fetch Settings
+        const { data: settingsData } = await supabase
+          .from('adm_settings')
+          .select('nome_exibicao, avatar_url')
+          .single();
+        
+        if (settingsData) setAdminSettings(settingsData);
+
+        // Fetch Posts
+        const { data: postsData } = await supabase
+          .from('adm_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (postsData) setPosts(postsData);
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+      } finally {
+        setLoadingPosts(false);
+      }
+    }
+
     fetchWinners();
+    fetchAdminData();
   }, []);
 
   return (
@@ -87,6 +121,45 @@ export default function Home() {
             </button>
           </div>
         </motion.div>
+      </section>
+
+      {/* Admin Posts Feed */}
+      <section className="mx-auto w-full max-w-4xl px-4">
+        <div className="mb-10 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-black tracking-tight text-white">Novidades do ADM</h2>
+            <p className="text-zinc-500">Fique por dentro das últimas atualizações</p>
+          </div>
+          <Link 
+            to="/sobre-adm" 
+            className="text-sm font-bold uppercase tracking-widest text-primary hover:underline"
+          >
+            Ver Perfil Completo
+          </Link>
+        </div>
+
+        <div className="space-y-8">
+          {loadingPosts ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : posts.length > 0 ? (
+            posts.map((post) => (
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                currentUser={user} 
+                isAdmin={profile?.is_admin} 
+                adminSettings={adminSettings}
+                showAdminHeader
+              />
+            ))
+          ) : (
+            <div className="rounded-[2.5rem] border border-dashed border-white/10 py-20 text-center">
+              <p className="text-zinc-500">Nenhuma publicação recente.</p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Steps Section */}

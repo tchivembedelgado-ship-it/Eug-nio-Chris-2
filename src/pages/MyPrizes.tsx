@@ -108,7 +108,13 @@ export default function MyPrizes() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-zinc-400">Rifa: <span className="text-white">{claim.rifas?.nome}</span></p>
+                    <p className="text-sm text-zinc-400">
+                      {claim.rifas?.nome ? (
+                        <>Rifa: <span className="text-white">{claim.rifas.nome}</span></>
+                      ) : (
+                        <span className="text-orange-500 font-bold italic">Presente Especial do ADM</span>
+                      )}
+                    </p>
                     <p className="mt-1 text-xs text-zinc-500">Ganhado em: {new Date(claim.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>

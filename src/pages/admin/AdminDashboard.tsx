@@ -183,6 +183,10 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Link to="/admin/users" className="flex items-center gap-3 rounded-xl border border-white/5 bg-zinc-900/50 p-4 transition-colors hover:bg-zinc-900">
+            <Users className="h-5 w-5 text-indigo-500" />
+            <span className="text-sm font-medium">Gerenciar Usuários</span>
+          </Link>
           <Link to="/admin/config-perfil" className="flex items-center gap-3 rounded-xl border border-white/5 bg-zinc-900/50 p-4 transition-colors hover:bg-zinc-900">
             <UserCircle className="h-5 w-5 text-primary" />
             <span className="text-sm font-medium">Perfil Social (Posts)</span>
