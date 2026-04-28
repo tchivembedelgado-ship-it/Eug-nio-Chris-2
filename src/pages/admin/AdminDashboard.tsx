@@ -16,7 +16,8 @@ import {
   Package,
   DollarSign,
   Loader2,
-  UserCircle
+  UserCircle,
+  Star
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Raffle } from '../../lib/supabase';
@@ -223,6 +224,7 @@ export default function AdminDashboard() {
                   <th className="px-4 md:px-6 py-4 font-bold">Preço</th>
                   <th className="px-4 md:px-6 py-4 font-bold hidden md:table-cell">Prêmio Principal</th>
                   <th className="px-4 md:px-6 py-4 font-bold">Status</th>
+                  <th className="px-4 md:px-6 py-4 font-bold">Destaque</th>
                   <th className="px-4 md:px-6 py-4 font-bold">Ações</th>
                 </tr>
               </thead>
@@ -262,6 +264,13 @@ export default function AdminDashboard() {
                       }`}>
                         {raffle.status === 'active' ? 'Ativa' : raffle.status === 'completed' ? 'Finalizada' : 'Cancelada'}
                       </span>
+                    </td>
+                    <td className="px-4 md:px-6 py-4">
+                      {raffle.is_featured && (
+                        <div className="flex items-center justify-center rounded-full bg-primary/10 p-1.5 text-primary">
+                          <Star className="h-3 w-3 fill-primary" />
+                        </div>
+                      )}
                     </td>
                         <td className="px-4 md:px-6 py-4">
                           <div className="flex items-center gap-2">

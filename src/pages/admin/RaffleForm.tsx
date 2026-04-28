@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle2, Upload, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle2, Upload, X, Star } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import BackButton from '../../components/BackButton';
 
@@ -13,8 +13,10 @@ interface HiddenPrize {
 
 export default function RaffleForm() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
   
   // BLOCO 1: Identidade Visual
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -27,6 +29,7 @@ export default function RaffleForm() {
   const [mainPrizeValue, setMainPrizeValue] = useState<number>(0);
   const [mainPrizeDescription, setMainPrizeDescription] = useState('');
   const [mainPrizeType, setMainPrizeType] = useState<'cash' | 'physical'>('cash');
+  const [isFeatured, setIsFeatured] = useState(false);
 
   // BLOCO 3: Engenharia de Prémios Escondidos
   const [hiddenPrizes, setHiddenPrizes] = useState<HiddenPrize[]>([]);
@@ -34,6 +37,40 @@ export default function RaffleForm() {
   const [newPrizeValue, setNewPrizeValue] = useState<string>('');
   const [newPrizeType, setNewPrizeType] = useState<'cash' | 'physical'>('cash');
   const [newPrizeDescription, setNewPrizeDescription] = useState<string>('');
+
+  useEffect(() => {
+    if (id) {
+      fetchRaffle();
+    }
+  }, [id]);
+
+  async function fetchRaffle() {
+    setInitialLoading(true);
+    try {
+      const { data: raffle, error } = await supabase
+        .from('rifas')
+        .select('*, premios_escondidos(*)')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      if (raffle) {
+        setNome(raffle.nome);
+        setPrice(raffle.price);
+        setTotalNumbers(raffle.total_numbers);
+        setMainPrizeValue(raffle.main_prize_value);
+        setMainPrizeDescription(raffle.main_prize_description || '');
+        setMainPrizeType(raffle.main_prize_type as 'cash' | 'physical');
+        setImagePreview(raffle.image_url);
+        setIsFeatured(raffle.is_featured || false);
+        setHiddenPrizes(raffle.premios_escondidos || []);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar rifa:', error);
+    } finally {
+      setInitialLoading(false);
+    }
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -99,7 +136,7 @@ export default function RaffleForm() {
 
   // BLOCO 4: Processo de Publicação
   const handlePublish = async () => {
-    if (!nome || price <= 0 || !imageFile) {
+    if (!nome || price <= 0 || (!imageFile && !imagePreview)) {
       alert('Por favor, preencha o nome, o preço e selecione uma imagem para a rifa.');
       return;
     }
@@ -107,59 +144,104 @@ export default function RaffleForm() {
     setLoading(true);
 
     try {
-      // 1. Upload da imagem para o Supabase Storage
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `rifas/${fileName}`;
+      let publicUrl = imagePreview;
 
-      const { error: uploadError } = await supabase.storage
-        .from('fotos-rifas')
-        .upload(filePath, imageFile);
+      // 1. Upload da imagem se houver um novo arquivo
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `rifas/${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('fotos-rifas')
+          .upload(filePath, imageFile);
 
-      // Pegar a URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('fotos-rifas')
-        .getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
 
-          // 2. Inserir a rifa na tabela rifas
-          const { data: raffle, error: raffleError } = await supabase
+        const { data: { publicUrl: newUrl } } = supabase.storage
+          .from('fotos-rifas')
+          .getPublicUrl(filePath);
+        
+        publicUrl = newUrl;
+      }
+
+      // Logic for Featured Limit
+      if (isFeatured) {
+        const { data: featured } = await supabase
+          .from('rifas')
+          .select('id, featured_at')
+          .eq('is_featured', true)
+          .neq('id', id || '') // Don't count current raffle check if updating
+          .order('featured_at', { ascending: true });
+
+        if (featured && featured.length >= 6) {
+          const oldest = featured[0];
+          await supabase
             .from('rifas')
-            .insert([{
-              nome,
-              price,
-              total_numbers: totalNumbers,
-              main_prize_value: mainPrizeValue,
-              main_prize_type: mainPrizeType,
-              main_prize_description: mainPrizeDescription || (mainPrizeType === 'cash' ? `${mainPrizeValue.toLocaleString()} Kz` : nome),
-              image_url: publicUrl,
-              current_number: 1,
-              sold_count: 0,
-              status: 'active',
-              draw_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-            }])
-            .select()
-            .single();
+            .update({ is_featured: false })
+            .eq('id', oldest.id);
+        }
+      }
 
-      if (raffleError) throw raffleError;
+      const raffleData = {
+        nome,
+        price,
+        total_numbers: totalNumbers,
+        main_prize_value: mainPrizeValue,
+        main_prize_type: mainPrizeType,
+        main_prize_description: mainPrizeDescription || (mainPrizeType === 'cash' ? `${mainPrizeValue.toLocaleString()} Kz` : nome),
+        image_url: publicUrl,
+        is_featured: isFeatured,
+        featured_at: isFeatured ? new Date().toISOString() : null,
+      };
 
-          // 3. Inserir prémios escondidos na tabela premios_escondidos
-          if (hiddenPrizes.length > 0) {
-            const prizesToInsert = hiddenPrizes.map(p => ({
-              raffle_id: raffle.id,
-              target_number: p.target_number,
-              prize_value: p.prize_value,
-              prize_type: p.prize_type,
-              description: p.description
-            }));
-    
-            const { error: prizesError } = await supabase
-              .from('premios_escondidos')
-              .insert(prizesToInsert);
-    
-            if (prizesError) throw prizesError;
-          }
+      let raffleId = id;
+
+      if (id) {
+        // Update
+        const { error } = await supabase
+          .from('rifas')
+          .update(raffleData)
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        // Insert
+        const { data: raffle, error: raffleError } = await supabase
+          .from('rifas')
+          .insert([{
+            ...raffleData,
+            current_number: 1,
+            sold_count: 0,
+            status: 'active',
+            draw_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          }])
+          .select()
+          .single();
+
+        if (raffleError) throw raffleError;
+        raffleId = raffle.id;
+      }
+
+      // 3. Atualizar prémios escondidos (limpar e reinserir para simplicidade se houver ID)
+      if (id) {
+        await supabase.from('premios_escondidos').delete().eq('raffle_id', id);
+      }
+
+      if (hiddenPrizes.length > 0) {
+        const prizesToInsert = hiddenPrizes.map(p => ({
+          raffle_id: raffleId,
+          target_number: p.target_number,
+          prize_value: p.prize_value,
+          prize_type: p.prize_type,
+          description: p.description
+        }));
+
+        const { error: prizesError } = await supabase
+          .from('premios_escondidos')
+          .insert(prizesToInsert);
+
+        if (prizesError) throw prizesError;
+      }
 
       navigate('/admin');
     } catch (error: any) {
@@ -169,6 +251,14 @@ export default function RaffleForm() {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black p-4 md:p-12">
@@ -226,11 +316,34 @@ export default function RaffleForm() {
 
           {/* BLOCO 2: Dados Básicos */}
           <section className="rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 bg-zinc-900/50 p-6 shadow-sm md:p-12">
-            <div className="mb-6 md:mb-8 flex items-center gap-3">
-              <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-                <span className="text-sm md:text-base font-bold">2</span>
+            <div className="mb-6 md:mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                  <span className="text-sm md:text-base font-bold">2</span>
+                </div>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight text-white">Dados Básicos</h2>
               </div>
-              <h2 className="text-xl md:text-2xl font-black tracking-tight text-white">Dados Básicos</h2>
+
+              {/* Destaque Toggle */}
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsFeatured(!isFeatured)}
+                  className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-black transition-all shadow-lg ${
+                    isFeatured 
+                      ? 'bg-primary text-black scale-105 ring-4 ring-primary/20' 
+                      : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                  }`}
+                >
+                  <Star className={`h-5 w-5 ${isFeatured ? 'fill-black' : ''}`} />
+                  {isFeatured ? 'PRÊMIO EM DESTAQUE ATIVO' : 'DESTACAR NA HOME?'}
+                </button>
+                {isFeatured && (
+                  <span className="text-[10px] text-primary/60 font-bold uppercase tracking-widest">
+                    Aparecerá no topo da página inicial
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="grid gap-6 md:grid-gap-8 md:grid-cols-2">
@@ -413,12 +526,12 @@ export default function RaffleForm() {
               {loading ? (
                 <>
                   <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
-                  <span className="text-sm md:text-base">Publicando Rifa e Prémios...</span>
+                  <span className="text-sm md:text-base">{id ? 'Guardando Alterações...' : 'Publicando Rifa e Prémios...'}</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6" />
-                  <span className="text-sm md:text-base">Publicar Rifa</span>
+                  <span className="text-sm md:text-base">{id ? 'Guardar Alterações' : 'Publicar Rifa'}</span>
                 </>
               )}
             </button>

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Shield, Zap, ArrowRight, Star, MessageSquare, User, Loader2, Send, Image as ImageIcon, Video, Reply } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Trophy, Shield, Zap, ArrowRight, Star, MessageSquare, User, Loader2, Send, Image as ImageIcon, Video, Reply, Ticket } from 'lucide-react';
+import { supabase, type Raffle } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { PostCard, Post, AdminSettings } from '../components/AdminPosts';
@@ -12,6 +12,7 @@ export default function Home() {
   const { t } = useTranslation();
   const { user, profile } = useAuth();
   const [winners, setWinners] = useState<{ user_email: string, prize_amount: number, raffle_name: string }[]>([]);
+  const [featuredRaffles, setFeaturedRaffles] = useState<Raffle[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(true);
@@ -32,6 +33,17 @@ export default function Home() {
           raffle_name: w.rifas?.nome || 'Rifa'
         })));
       }
+    }
+
+    async function fetchFeatured() {
+      const { data } = await supabase
+        .from('rifas')
+        .select('*')
+        .eq('is_featured', true)
+        .eq('status', 'active')
+        .order('featured_at', { ascending: false });
+      
+      if (data) setFeaturedRaffles(data);
     }
 
     async function fetchAdminData() {
@@ -61,6 +73,7 @@ export default function Home() {
     }
 
     fetchWinners();
+    fetchFeatured();
     fetchAdminData();
   }, []);
 
@@ -122,6 +135,61 @@ export default function Home() {
           </div>
         </motion.div>
       </section>
+
+      {/* Featured Prizes Section */}
+      {featuredRaffles.length > 0 && (
+        <section className="w-full overflow-hidden">
+          <div className="mx-auto max-w-7xl px-4 md:px-8 mb-8">
+            <div className="flex items-center gap-3">
+              <Trophy className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-black tracking-tighter sm:text-3xl">Prémios em Destaque</h2>
+            </div>
+            <p className="text-zinc-500 mt-1">As melhores oportunidades selecionadas para você</p>
+          </div>
+
+          <div className="relative group">
+            {/* Simple marquee wrapper */}
+            <div className="flex animate-marquee whitespace-nowrap py-4">
+              {/* Double items for infinite loop effect */}
+              {[...featuredRaffles, ...featuredRaffles, ...featuredRaffles].map((raffle, i) => (
+                <Link
+                  key={`${raffle.id}-${i}`}
+                  to={`/rifas/${raffle.id}`}
+                  className="mx-4 inline-block w-[280px] sm:w-[350px] shrink-0"
+                >
+                  <div className="h-full overflow-hidden rounded-[2rem] border border-white/5 bg-zinc-900/50 transition-all hover:border-primary/50 hover:bg-zinc-900 group/item">
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      <img 
+                        src={raffle.image_url} 
+                        alt={raffle.nome} 
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover/item:scale-110" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="inline-block rounded-lg bg-primary px-3 py-1 text-xs font-black text-black uppercase tracking-tighter">
+                          {formatCurrency(raffle.price)} / Bilhete
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="mb-4 text-lg md:text-xl font-bold line-clamp-1 text-white">{raffle.nome}</h3>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-zinc-400 text-xs font-bold uppercase tracking-widest">
+                          <Ticket className="h-4 w-4" />
+                          <span>{raffle.sold_count} Números</span>
+                        </div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white transition-all group-hover/item:bg-primary group-hover/item:text-black">
+                          <ArrowRight className="h-5 w-5" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Admin Posts Feed */}
       <section className="mx-auto w-full max-w-4xl px-4">

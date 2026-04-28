@@ -47,6 +47,8 @@ export type Raffle = {
   winner_id: string | null;
   draw_date: string;
   status: 'active' | 'completed' | 'cancelled';
+  is_featured?: boolean;
+  featured_at?: string;
 };
 
 export type Purchase = {
