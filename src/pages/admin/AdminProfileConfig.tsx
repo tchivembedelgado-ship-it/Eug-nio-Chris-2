@@ -332,7 +332,7 @@ function CommentSection({ postId, currentUser }: { postId: string; currentUser: 
 }
 
 export default function AdminProfileConfig() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -393,6 +393,18 @@ export default function AdminProfileConfig() {
         });
 
       if (error) throw error;
+
+      // Sincroniza com a tabela profiles para que apareça corretamente em comentários e chats
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: settings.nome_exibicao,
+          avatar_url: settings.avatar_url,
+          bi_photo_url: settings.avatar_url // Usa o avatar como foto do BI para o admin
+        })
+        .eq('id', user?.id);
+
+      await refreshProfile();
       alert('Configurações salvas com sucesso!');
     } catch (error) {
       console.error('Error saving settings:', error);

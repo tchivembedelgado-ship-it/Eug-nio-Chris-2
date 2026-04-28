@@ -113,7 +113,7 @@ export default function Profile() {
         <h1 className="text-4xl font-black tracking-tighter sm:text-6xl">O Meu Perfil</h1>
         <p className="mt-4 text-zinc-500">Mantenha as suas informações atualizadas para uma experiência profissional.</p>
         
-        {!isProfileComplete && (
+        {!isProfileComplete && !profile?.is_admin && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

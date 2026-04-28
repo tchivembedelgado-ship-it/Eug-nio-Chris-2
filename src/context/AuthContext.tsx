@@ -35,14 +35,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fallback de segurança: Se for o email do admin, força is_admin como true
       const isAdminEmail = user.email?.toLowerCase() === 'tchivembedelgado@gmail.com';
-      if (isAdminEmail) {
-        console.log('Auth: Usuário é o administrador mestre (por email)');
-      }
-
-      const finalProfile = profile 
+      let finalProfile = profile 
         ? { ...profile, is_admin: profile.is_admin || isAdminEmail } 
         : (isAdminEmail ? { id: user.id, email: user.email, is_admin: true, balance: 0 } : null);
       
+      // Se for admin, busca as configurações de exibição do admin
+      if (finalProfile?.is_admin) {
+        const { data: adminSettings } = await supabase
+          .from('adm_settings')
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (adminSettings) {
+          finalProfile = {
+            ...finalProfile,
+            full_name: adminSettings.nome_exibicao || finalProfile.full_name,
+            avatar_url: adminSettings.avatar_url || finalProfile.avatar_url,
+            bi_photo_url: adminSettings.avatar_url || finalProfile.bi_photo_url, // Fallback para foto do BI
+            bio: adminSettings.biografia || (finalProfile as any).bio,
+          };
+        }
+      }
+
       console.log('Auth: Perfil final definido:', finalProfile);
       setProfile(finalProfile as Profile);
     } else {

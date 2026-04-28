@@ -21,12 +21,14 @@ export default function ProfileGuard({ children }: ProfileGuardProps) {
   }
 
   const isProfileComplete = 
+    profile?.is_admin || (
     profile?.full_name?.trim() && 
     profile?.phone?.trim() && 
     profile?.address?.trim() && 
     profile?.nif?.trim() && 
     profile?.bank_details?.trim() && 
-    profile?.bi_photo_url?.trim();
+    profile?.bi_photo_url?.trim()
+  );
 
   if (!profile || !isProfileComplete) {
     return (

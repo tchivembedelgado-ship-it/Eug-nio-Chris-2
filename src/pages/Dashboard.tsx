@@ -16,12 +16,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const isProfileComplete = 
+    profile?.is_admin || (
     profile?.full_name && 
     profile?.phone && 
     profile?.address && 
     profile?.nif && 
     profile?.bank_details && 
-    profile?.bi_photo_url;
+    profile?.bi_photo_url
+  );
 
   useEffect(() => {
     if (!user) return;

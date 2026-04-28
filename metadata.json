@@ -1,5 +1,5 @@
 {
   "name": "RifaAngola",
   "description": "Plataforma profissional de rifas online em Angola com sistema de prémios ocultos e atribuição automática.",
-  "requestFramePermissions": ["microphone", "camera"]
+  "requestFramePermissions": []
 }
